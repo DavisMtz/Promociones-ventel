@@ -218,6 +218,8 @@
     position: fixed; inset: 0; background: rgba(0,0,0,.45);
     display: grid; place-items: center; z-index: 50; padding: 20px;
   }
+  /* El atributo hidden debe ganar sobre display:grid */
+  .modal-overlay[hidden] { display: none; }
   .modal {
     background: #fff; border-radius: var(--radius); padding: 24px;
     max-width: 440px; width: 100%; box-shadow: 0 8px 30px rgba(0,0,0,.25);
@@ -240,4 +242,5 @@
   }
   .toast.ok { background: var(--ok); }
   .toast.err { background: var(--warn); }
+  .toast[hidden] { display: none; }
 </style>
