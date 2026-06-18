@@ -1,4 +1,4 @@
-# Promociones Ventel — Constructor de mensajes para Google Chat
+# Anuncios Liverpool — Constructor de mensajes para Google Chat
 
 Aplicación web en **Google Apps Script (GAS)** para construir, previsualizar y
 enviar mensajes de tarjeta (**cardsV2**) a Google Chat mediante un webhook,
@@ -7,20 +7,35 @@ sin escribir JSON a mano.
 ## ✨ Características
 
 - **Editor visual** de tarjetas de Google Chat (estructura `cardsV2`).
-- **Encabezado** con título, subtítulo e imagen (círculo o cuadrado).
-- **Secciones y widgets** que se agregan/quitan dinámicamente:
-  - 📝 Texto (admite HTML: `<b>`, `<i>`, `<a href="">`)
-  - 🖼️ Imagen
-  - 🔘 Botones (varios, con texto, enlace y color personalizable)
-  - 🏷️ Texto decorado (etiqueta superior / texto / etiqueta inferior)
-  - ➖ Separador
+- **Encabezado** con título, subtítulo, imagen (círculo o cuadrado) y texto alternativo.
+- **Secciones colapsables** y **reordenamiento** (▲ ▼) de secciones y elementos.
+- **Widgets** que se agregan/quitan dinámicamente:
+  - 📝 **Texto** (admite HTML: `<b>`, `<i>`, `<a href="">`)
+  - 🖼️ **Imagen** (con enlace al hacer clic)
+  - 🔘 **Botones** con estilo (relleno / contorno / tonal / sin borde), color e icono
+  - 🏷️ **Texto decorado** (icono, etiqueta superior/inferior, texto y botón lateral)
+  - 🔖 **Chips** (con icono y enlace)
+  - 🔲 **Cuadrícula** (grid de 1–3 columnas con imagen, título y subtítulo)
+  - ➖ **Separador**
+- **Iconos integrados** de Google Chat (knownIcon) para botones, chips y texto decorado.
 - **Imágenes por enlace o por subida**: las imágenes subidas se guardan en
   la carpeta de Drive **«Mensajes ventel»** (se crea automáticamente si no
-  existe) y se hacen públicas para que Chat pueda mostrarlas.
+  existe) y se hacen públicas para que Chat pueda mostrarlas. Los enlaces de
+  Drive pegados se convierten automáticamente al formato que Chat sí renderiza.
 - **Webhook editable** y recordado entre sesiones (`PropertiesService`).
 - **Previsualización** en vivo con apariencia de tarjeta de Google Chat.
 - **JSON generado** visible y copiable, construido y validado correctamente.
 - **Doble confirmación** antes de enviar (modal con el destino + confirmación final).
+
+> ℹ️ **Sobre las imágenes:** Google Chat dejó de mostrar los enlaces clásicos
+> `drive.google.com/uc?export=view`. La app usa el formato del CDN de Google
+> `https://lh3.googleusercontent.com/d/{ID}` que sí se renderiza dentro de las
+> tarjetas. La imagen debe ser pública (la subida lo hace automáticamente).
+
+> ⚠️ **Widgets interactivos:** campos de texto, listas desplegables, selectores
+> de fecha e interruptores **no** funcionan por webhook entrante porque
+> requieren una app de Chat que procese las interacciones. Por eso el
+> constructor incluye solo elementos que sí se muestran al enviar por webhook.
 
 ## 📁 Archivos
 
