@@ -27,10 +27,14 @@ sin escribir JSON a mano.
 - **JSON generado** visible y copiable, construido y validado correctamente.
 - **Doble confirmación** antes de enviar (modal con el destino + confirmación final).
 
-> ℹ️ **Sobre las imágenes:** Google Chat dejó de mostrar los enlaces clásicos
-> `drive.google.com/uc?export=view`. La app usa el formato del CDN de Google
-> `https://lh3.googleusercontent.com/d/{ID}` que sí se renderiza dentro de las
-> tarjetas. La imagen debe ser pública (la subida lo hace automáticamente).
+> ℹ️ **Sobre las imágenes:** Google Chat pide las imágenes de forma **anónima**
+> desde sus servidores, así que la URL debe servir el PNG/JPG sin sesión
+> iniciada. Los enlaces `uc?export=view` (obsoleto) y `lh3.googleusercontent.com/d/`
+> (requiere sesión) **no funcionan** dentro del mensaje. La app usa el endpoint
+> `https://drive.google.com/thumbnail?id={ID}&sz=w1600`, que sí responde a
+> peticiones anónimas, y convierte automáticamente cualquier enlace de Drive
+> que pegues a ese formato. La imagen debe ser pública (la subida lo hace
+> automáticamente con «cualquiera con el enlace»).
 
 > ⚠️ **Widgets interactivos:** campos de texto, listas desplegables, selectores
 > de fecha e interruptores **no** funcionan por webhook entrante porque

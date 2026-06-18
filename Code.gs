@@ -110,9 +110,10 @@ function uploadImage(dataUrl, fileName) {
   return {
     id: id,
     name: file.getName(),
-    // Enlace que Google Chat puede renderizar de forma fiable (CDN de Google).
-    // El endpoint clasico uc?export=view dejo de funcionar en Chat.
-    url: 'https://lh3.googleusercontent.com/d/' + id + '=s1600'
+    // Endpoint "thumbnail" de Drive: sirve la imagen (PNG/JPG) con su
+    // content-type a peticiones ANONIMAS, que es como Google Chat la pide.
+    // (uc?export=view dejo de funcionar y lh3/d/ requiere sesion iniciada.)
+    url: 'https://drive.google.com/thumbnail?id=' + id + '&sz=w1600'
   };
 }
 
