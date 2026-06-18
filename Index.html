@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <?!= include('Stylesheet'); ?>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">VT</span>
+        <div>
+          <h1>Promociones Ventel</h1>
+          <p>Constructor de mensajes de tarjeta para Google Chat</p>
+        </div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- ====================== EDITOR ====================== -->
+      <section class="editor" aria-label="Editor">
+
+        <!-- Webhook -->
+        <div class="card">
+          <div class="card-title">
+            <span class="step">1</span>
+            <h2>Webhook de destino</h2>
+          </div>
+          <label class="field">
+            <span>URL del webhook de Google Chat</span>
+            <div class="webhook-row">
+              <input type="text" id="webhookUrl"
+                     placeholder="https://chat.googleapis.com/v1/spaces/.../messages?key=...&token=...">
+              <button class="btn ghost" id="saveWebhookBtn" type="button" title="Guardar webhook">Guardar</button>
+            </div>
+            <small class="hint" id="webhookHint">Se recordara para la proxima vez que abras la app.</small>
+          </label>
+        </div>
+
+        <!-- Texto simple -->
+        <div class="card">
+          <div class="card-title">
+            <span class="step">2</span>
+            <h2>Mensaje de texto (opcional)</h2>
+          </div>
+          <label class="field">
+            <span>Texto que acompaña a la tarjeta</span>
+            <textarea id="plainText" rows="2"
+                      placeholder="Ej. ¡Nueva promoción disponible! 🎉"></textarea>
+            <small class="hint">Admite formato: *negrita*, _cursiva_, &lt;https://enlace|texto&gt;.</small>
+          </label>
+        </div>
+
+        <!-- Encabezado de la tarjeta -->
+        <div class="card">
+          <div class="card-title">
+            <span class="step">3</span>
+            <h2>Encabezado de la tarjeta</h2>
+            <label class="toggle">
+              <input type="checkbox" id="useHeader" checked>
+              <span>Usar encabezado</span>
+            </label>
+          </div>
+          <div id="headerFields">
+            <label class="field">
+              <span>Título</span>
+              <input type="text" id="hTitle" placeholder="Ej. Promoción del mes">
+            </label>
+            <label class="field">
+              <span>Subtítulo</span>
+              <input type="text" id="hSubtitle" placeholder="Ej. Válido hasta fin de mes">
+            </label>
+            <div class="grid-2">
+              <label class="field">
+                <span>Imagen del encabezado (URL)</span>
+                <input type="text" id="hImageUrl" placeholder="https://...">
+              </label>
+              <label class="field">
+                <span>Forma</span>
+                <select id="hImageType">
+                  <option value="CIRCLE">Círculo</option>
+                  <option value="SQUARE">Cuadrado</option>
+                </select>
+              </label>
+            </div>
+            <div class="upload-row">
+              <input type="file" id="hImageFile" accept="image/*" hidden>
+              <button class="btn ghost small" type="button" id="hImageUploadBtn">⬆ Subir imagen del encabezado</button>
+              <span class="upload-status" id="hImageStatus"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Secciones / widgets -->
+        <div class="card">
+          <div class="card-title">
+            <span class="step">4</span>
+            <h2>Contenido</h2>
+          </div>
+          <div id="sections"></div>
+          <button class="btn ghost" type="button" id="addSectionBtn">+ Agregar sección</button>
+        </div>
+
+        <!-- JSON -->
+        <div class="card">
+          <div class="card-title">
+            <span class="step">5</span>
+            <h2>JSON generado</h2>
+            <button class="btn ghost small" type="button" id="copyJsonBtn">Copiar</button>
+          </div>
+          <pre class="json-box" id="jsonOutput"></pre>
+          <small class="hint" id="jsonStatus"></small>
+        </div>
+
+        <div class="send-bar">
+          <button class="btn primary big" type="button" id="sendBtn">📨 Enviar a Google Chat</button>
+        </div>
+      </section>
+
+      <!-- ====================== PREVISUALIZACIÓN ====================== -->
+      <aside class="preview-pane" aria-label="Previsualización">
+        <div class="preview-sticky">
+          <h3>Previsualización</h3>
+          <div class="chat-window">
+            <div class="chat-bot">
+              <div class="bot-avatar">VT</div>
+              <div class="bot-meta"><strong>Ventel</strong> <span>App · ahora</span></div>
+            </div>
+            <div id="previewText" class="preview-text"></div>
+            <div id="previewCard" class="gchat-card"></div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- ====================== MODAL DE CONFIRMACIÓN ====================== -->
+    <div class="modal-overlay" id="confirmModal" hidden>
+      <div class="modal">
+        <h3>Confirmar envío</h3>
+        <p>Estás a punto de enviar este mensaje a Google Chat. Revisa el destino:</p>
+        <div class="modal-target" id="modalTarget"></div>
+        <p class="modal-warn">Esta acción no se puede deshacer. ¿Deseas continuar?</p>
+        <div class="modal-actions">
+          <button class="btn ghost" type="button" id="cancelSendBtn">Cancelar</button>
+          <button class="btn primary" type="button" id="confirmSendBtn">Sí, enviar ahora</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast" hidden></div>
+
+    <?!= include('JavaScript'); ?>
+  </body>
+</html>
