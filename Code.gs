@@ -18,7 +18,7 @@ var PROP_WEBHOOK = 'VENTEL_WEBHOOK_URL';
 function doGet() {
   return HtmlService.createTemplateFromFile('Index')
     .evaluate()
-    .setTitle('Promociones Ventel - Constructor de mensajes')
+    .setTitle('Anuncios Liverpool - Constructor de mensajes')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -110,8 +110,9 @@ function uploadImage(dataUrl, fileName) {
   return {
     id: id,
     name: file.getName(),
-    // Enlace directo que Google Chat puede renderizar.
-    url: 'https://drive.google.com/uc?export=view&id=' + id
+    // Enlace que Google Chat puede renderizar de forma fiable (CDN de Google).
+    // El endpoint clasico uc?export=view dejo de funcionar en Chat.
+    url: 'https://lh3.googleusercontent.com/d/' + id + '=s1600'
   };
 }
 

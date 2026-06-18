@@ -5,16 +5,68 @@
 var state = {
   text: '',
   useHeader: true,
-  header: { title: '', subtitle: '', imageUrl: '', imageType: 'CIRCLE' },
+  header: { title: '', subtitle: '', imageUrl: '', imageType: 'CIRCLE', imageAltText: '' },
   sections: []
 };
 
 var WIDGET_LABELS = {
-  text: 'Texto',
-  image: 'Imagen',
-  buttons: 'Botones',
-  decoratedText: 'Texto decorado',
-  divider: 'Separador'
+  text: '📝 Texto',
+  image: '🖼️ Imagen',
+  buttons: '🔘 Botones',
+  decoratedText: '🏷️ Texto decorado',
+  chips: '🔖 Chips',
+  grid: '🔲 Cuadrícula',
+  divider: '➖ Separador'
+};
+
+// Iconos integrados (knownIcon) de Google Chat + su emoji para la previsualizacion.
+var KNOWN_ICONS = {
+  '': '— Ninguno —',
+  STAR: '⭐ STAR',
+  OFFER: '🏷️ OFFER',
+  SHOPPING_CART: '🛒 SHOPPING_CART',
+  STORE: '🏬 STORE',
+  DOLLAR: '💲 DOLLAR',
+  TICKET: '🎟️ TICKET',
+  CONFIRMATION_NUMBER_ICON: '🎫 CONFIRMATION_NUMBER',
+  EMAIL: '✉️ EMAIL',
+  PHONE: '📞 PHONE',
+  PERSON: '👤 PERSON',
+  MULTIPLE_PEOPLE: '👥 MULTIPLE_PEOPLE',
+  MEMBERSHIP: '🪪 MEMBERSHIP',
+  MAP_PIN: '📍 MAP_PIN',
+  CLOCK: '🕐 CLOCK',
+  EVENT_SEAT: '💺 EVENT_SEAT',
+  EVENT_PERFORMER: '🎭 EVENT_PERFORMER',
+  RESTAURANT_ICON: '🍴 RESTAURANT',
+  HOTEL: '🏨 HOTEL',
+  HOTEL_ROOM_TYPE: '🛏️ HOTEL_ROOM_TYPE',
+  CAR: '🚗 CAR',
+  BUS: '🚌 BUS',
+  TRAIN: '🚆 TRAIN',
+  AIRPLANE: '✈️ AIRPLANE',
+  FLIGHT_DEPARTURE: '🛫 FLIGHT_DEPARTURE',
+  FLIGHT_ARRIVAL: '🛬 FLIGHT_ARRIVAL',
+  BOOKMARK: '🔖 BOOKMARK',
+  DESCRIPTION: '📄 DESCRIPTION',
+  INVITE: '📩 INVITE',
+  VIDEO_CAMERA: '🎥 VIDEO_CAMERA',
+  VIDEO_PLAY: '▶️ VIDEO_PLAY'
+};
+var ICON_EMOJI = {
+  STAR:'⭐', OFFER:'🏷️', SHOPPING_CART:'🛒', STORE:'🏬', DOLLAR:'💲', TICKET:'🎟️',
+  CONFIRMATION_NUMBER_ICON:'🎫', EMAIL:'✉️', PHONE:'📞', PERSON:'👤', MULTIPLE_PEOPLE:'👥',
+  MEMBERSHIP:'🪪', MAP_PIN:'📍', CLOCK:'🕐', EVENT_SEAT:'💺', EVENT_PERFORMER:'🎭',
+  RESTAURANT_ICON:'🍴', HOTEL:'🏨', HOTEL_ROOM_TYPE:'🛏️', CAR:'🚗', BUS:'🚌', TRAIN:'🚆',
+  AIRPLANE:'✈️', FLIGHT_DEPARTURE:'🛫', FLIGHT_ARRIVAL:'🛬', BOOKMARK:'🔖', DESCRIPTION:'📄',
+  INVITE:'📩', VIDEO_CAMERA:'🎥', VIDEO_PLAY:'▶️'
+};
+
+var BUTTON_TYPES = {
+  FILLED: 'Relleno',
+  OUTLINED: 'Contorno',
+  FILLED_TONAL: 'Tonal',
+  BORDERLESS: 'Sin borde'
 };
 
 function uid() { return 'w' + Math.random().toString(36).slice(2, 9); }
@@ -23,7 +75,6 @@ function uid() { return 'w' + Math.random().toString(36).slice(2, 9); }
  *  Inicializacion
  * ======================================================================== */
 document.addEventListener('DOMContentLoaded', function () {
-  // Recuperar webhook guardado en el servidor.
   google.script.run.withSuccessHandler(function (url) {
     if (url) {
       document.getElementById('webhookUrl').value = url;
@@ -31,41 +82,39 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }).getSavedWebhook();
 
-  // Empezar con una seccion por defecto.
   addSection();
-
   bindStaticInputs();
   renderSections();
   refresh();
 });
 
 /* ===========================================================================
- *  Enlaces de inputs estaticos (texto, encabezado, webhook)
+ *  Enlaces de inputs estaticos
  * ======================================================================== */
 function bindStaticInputs() {
-  document.getElementById('plainText').addEventListener('input', function (e) {
-    state.text = e.target.value; refresh();
-  });
+  document.getElementById('plainText').addEventListener('input', function (e) { state.text = e.target.value; refresh(); });
 
   document.getElementById('useHeader').addEventListener('change', function (e) {
     state.useHeader = e.target.checked;
-    document.getElementById('headerFields').style.opacity = e.target.checked ? '1' : '.45';
-    document.getElementById('headerFields').style.pointerEvents = e.target.checked ? 'auto' : 'none';
+    var hf = document.getElementById('headerFields');
+    hf.style.opacity = e.target.checked ? '1' : '.45';
+    hf.style.pointerEvents = e.target.checked ? 'auto' : 'none';
     refresh();
   });
 
   document.getElementById('hTitle').addEventListener('input', function (e) { state.header.title = e.target.value; refresh(); });
   document.getElementById('hSubtitle').addEventListener('input', function (e) { state.header.subtitle = e.target.value; refresh(); });
-  document.getElementById('hImageUrl').addEventListener('input', function (e) { state.header.imageUrl = e.target.value; refresh(); });
-  document.getElementById('hImageType').addEventListener('change', function (e) { state.header.imageType = e.target.value; refresh(); });
-
-  // Subir imagen de encabezado
-  document.getElementById('hImageUploadBtn').addEventListener('click', function () {
-    document.getElementById('hImageFile').click();
+  document.getElementById('hImageUrl').addEventListener('input', function (e) {
+    state.header.imageUrl = normalizeDriveUrl(e.target.value);
+    if (state.header.imageUrl !== e.target.value) e.target.value = state.header.imageUrl;
+    refresh();
   });
+  document.getElementById('hImageType').addEventListener('change', function (e) { state.header.imageType = e.target.value; refresh(); });
+  document.getElementById('hImageAlt').addEventListener('input', function (e) { state.header.imageAltText = e.target.value; refresh(); });
+
+  document.getElementById('hImageUploadBtn').addEventListener('click', function () { document.getElementById('hImageFile').click(); });
   document.getElementById('hImageFile').addEventListener('change', function (e) {
-    var file = e.target.files[0];
-    if (!file) return;
+    var file = e.target.files[0]; if (!file) return;
     handleUpload(file, document.getElementById('hImageStatus'), function (url) {
       state.header.imageUrl = url;
       document.getElementById('hImageUrl').value = url;
@@ -73,62 +122,71 @@ function bindStaticInputs() {
     });
   });
 
-  // Webhook
   document.getElementById('saveWebhookBtn').addEventListener('click', function () {
     var url = document.getElementById('webhookUrl').value.trim();
     if (!url) { toast('Escribe una URL de webhook primero.', 'err'); return; }
-    google.script.run.withSuccessHandler(function () {
-      toast('Webhook guardado.', 'ok');
-    }).saveWebhook(url);
+    google.script.run.withSuccessHandler(function () { toast('Webhook guardado.', 'ok'); }).saveWebhook(url);
   });
 
-  // Botones generales
   document.getElementById('addSectionBtn').addEventListener('click', function () { addSection(); renderSections(); refresh(); });
   document.getElementById('copyJsonBtn').addEventListener('click', copyJson);
   document.getElementById('sendBtn').addEventListener('click', openConfirm);
+  document.getElementById('resetBtn').addEventListener('click', resetAll);
 
-  // Modal
   document.getElementById('cancelSendBtn').addEventListener('click', closeConfirm);
   document.getElementById('confirmSendBtn').addEventListener('click', doSend);
 }
 
 /* ===========================================================================
- *  Manejo de secciones y widgets (modelo)
+ *  Normalizar enlaces de Google Drive a formato que Chat puede mostrar
+ * ======================================================================== */
+function normalizeDriveUrl(url) {
+  if (!url) return url;
+  var id = null;
+  var m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+          url.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
+          url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (m) id = m[1];
+  if (id && /drive\.google\.com|docs\.google\.com/.test(url)) {
+    return 'https://lh3.googleusercontent.com/d/' + id + '=s1600';
+  }
+  return url;
+}
+
+/* ===========================================================================
+ *  Modelo: secciones, widgets, reordenar
  * ======================================================================== */
 function addSection() {
-  state.sections.push({ id: uid(), header: '', widgets: [] });
+  state.sections.push({ id: uid(), header: '', collapsible: false, uncollapsible: 1, widgets: [] });
 }
-function removeSection(id) {
-  state.sections = state.sections.filter(function (s) { return s.id !== id; });
-}
+function removeSection(id) { state.sections = state.sections.filter(function (s) { return s.id !== id; }); }
 function addWidget(sectionId, type) {
-  var s = findSection(sectionId);
-  if (!s) return;
+  var s = findSection(sectionId); if (!s) return;
   var w = { id: uid(), type: type };
   if (type === 'text') w.text = '';
   if (type === 'image') { w.imageUrl = ''; w.altText = ''; w.onClickUrl = ''; }
-  if (type === 'buttons') w.buttons = [{ text: '', url: '', color: '' }];
-  if (type === 'decoratedText') { w.topLabel = ''; w.text = ''; w.bottomLabel = ''; }
+  if (type === 'buttons') w.buttons = [{ text: '', url: '', btype: 'FILLED', color: '', icon: '' }];
+  if (type === 'decoratedText') { w.startIcon = ''; w.topLabel = ''; w.text = ''; w.bottomLabel = ''; w.wrapText = true; w.btnText = ''; w.btnUrl = ''; }
+  if (type === 'chips') w.chips = [{ label: '', url: '', icon: '' }];
+  if (type === 'grid') { w.title = ''; w.columnCount = 2; w.onClickUrl = ''; w.items = [{ title: '', subtitle: '', imageUrl: '' }]; }
   s.widgets.push(w);
 }
 function removeWidget(sectionId, widgetId) {
-  var s = findSection(sectionId);
-  if (!s) return;
+  var s = findSection(sectionId); if (!s) return;
   s.widgets = s.widgets.filter(function (w) { return w.id !== widgetId; });
+}
+function moveItem(arr, idx, dir) {
+  var ni = idx + dir;
+  if (ni < 0 || ni >= arr.length) return;
+  var tmp = arr[idx]; arr[idx] = arr[ni]; arr[ni] = tmp;
 }
 function findSection(id) {
   for (var i = 0; i < state.sections.length; i++) if (state.sections[i].id === id) return state.sections[i];
   return null;
 }
-function findWidget(sectionId, widgetId) {
-  var s = findSection(sectionId);
-  if (!s) return null;
-  for (var i = 0; i < s.widgets.length; i++) if (s.widgets[i].id === widgetId) return s.widgets[i];
-  return null;
-}
 
 /* ===========================================================================
- *  Render del formulario de secciones
+ *  Helpers de DOM
  * ======================================================================== */
 function el(tag, cls, html) {
   var e = document.createElement(tag);
@@ -136,7 +194,38 @@ function el(tag, cls, html) {
   if (html !== undefined) e.innerHTML = html;
   return e;
 }
+function toolBtn(symbol, title, onClick, cls) {
+  var b = el('button', 'icon-btn ' + (cls || ''), symbol);
+  b.title = title; b.type = 'button';
+  b.addEventListener('click', onClick);
+  return b;
+}
+function labeledInput(label, value, placeholder, onInput, id) {
+  var f = el('label', 'field');
+  f.appendChild(el('span', null, label));
+  var i = el('input'); i.type = 'text'; i.value = value || ''; i.placeholder = placeholder || '';
+  if (id) i.id = id;
+  i.addEventListener('input', function (e) { onInput(e.target.value); refresh(); });
+  f.appendChild(i);
+  return f;
+}
+function iconSelect(value, onChange) {
+  var f = el('label', 'field');
+  f.appendChild(el('span', null, 'Icono'));
+  var sel = el('select');
+  Object.keys(KNOWN_ICONS).forEach(function (k) {
+    var o = el('option'); o.value = k; o.textContent = KNOWN_ICONS[k];
+    if (k === value) o.selected = true;
+    sel.appendChild(o);
+  });
+  sel.addEventListener('change', function (e) { onChange(e.target.value); refresh(); });
+  f.appendChild(sel);
+  return f;
+}
 
+/* ===========================================================================
+ *  Render del formulario de secciones
+ * ======================================================================== */
 function renderSections() {
   var container = document.getElementById('sections');
   container.innerHTML = '';
@@ -144,33 +233,49 @@ function renderSections() {
   state.sections.forEach(function (section, sIdx) {
     var block = el('div', 'section-block');
 
-    // Encabezado de seccion
+    // Cabecera de la seccion + herramientas
     var head = el('div', 'section-head');
     var field = el('label', 'field');
-    field.innerHTML = '<span>Título de la sección ' + (sIdx + 1) + ' (opcional)</span>';
-    var inp = el('input');
-    inp.type = 'text';
-    inp.value = section.header;
-    inp.placeholder = 'Ej. Detalles';
+    field.appendChild(el('span', null, 'Título de la sección ' + (sIdx + 1) + ' (opcional)'));
+    var inp = el('input'); inp.type = 'text'; inp.value = section.header; inp.placeholder = 'Ej. Detalles';
     inp.addEventListener('input', function (e) { section.header = e.target.value; refresh(); });
     field.appendChild(inp);
     head.appendChild(field);
 
-    var delBtn = el('button', 'icon-btn', '🗑');
-    delBtn.title = 'Eliminar sección';
-    delBtn.addEventListener('click', function () { removeSection(section.id); renderSections(); refresh(); });
-    head.appendChild(delBtn);
+    var tools = el('div', 'row-tools');
+    tools.appendChild(toolBtn('▲', 'Subir sección', function () { moveItem(state.sections, sIdx, -1); renderSections(); refresh(); }, 'move'));
+    tools.appendChild(toolBtn('▼', 'Bajar sección', function () { moveItem(state.sections, sIdx, 1); renderSections(); refresh(); }, 'move'));
+    tools.appendChild(toolBtn('🗑', 'Eliminar sección', function () { removeSection(section.id); renderSections(); refresh(); }));
+    head.appendChild(tools);
     block.appendChild(head);
 
+    // Opciones: colapsable
+    var opts = el('div', 'section-options');
+    var colLabel = el('label', 'inline-field');
+    var colChk = el('input'); colChk.type = 'checkbox'; colChk.checked = section.collapsible;
+    colChk.addEventListener('change', function (e) { section.collapsible = e.target.checked; renderSections(); refresh(); });
+    colLabel.appendChild(colChk); colLabel.appendChild(document.createTextNode(' Sección colapsable'));
+    opts.appendChild(colLabel);
+    if (section.collapsible) {
+      var ucLabel = el('label', 'inline-field');
+      ucLabel.appendChild(document.createTextNode('Elementos visibles antes de "Ver más":'));
+      var ucInp = el('input'); ucInp.type = 'number'; ucInp.min = '0'; ucInp.value = section.uncollapsible;
+      ucInp.addEventListener('input', function (e) { section.uncollapsible = parseInt(e.target.value, 10) || 0; refresh(); });
+      ucLabel.appendChild(ucInp);
+      opts.appendChild(ucLabel);
+    }
+    block.appendChild(opts);
+
     // Widgets
-    section.widgets.forEach(function (w) {
-      block.appendChild(renderWidget(section, w));
+    section.widgets.forEach(function (w, wIdx) {
+      block.appendChild(renderWidget(section, w, wIdx));
     });
 
-    // Agregar widget
+    // Paleta para agregar widgets
     var add = el('div', 'widget-add');
     Object.keys(WIDGET_LABELS).forEach(function (type) {
       var chip = el('button', 'chip', '+ ' + WIDGET_LABELS[type]);
+      chip.type = 'button';
       chip.addEventListener('click', function () { addWidget(section.id, type); renderSections(); refresh(); });
       add.appendChild(chip);
     });
@@ -180,27 +285,28 @@ function renderSections() {
   });
 }
 
-function renderWidget(section, w) {
+function renderWidget(section, w, wIdx) {
   var block = el('div', 'widget-block');
   var head = el('div', 'widget-head');
   head.appendChild(el('span', 'widget-type', WIDGET_LABELS[w.type]));
-  var del = el('button', 'icon-btn', '✕');
-  del.title = 'Quitar widget';
-  del.addEventListener('click', function () { removeWidget(section.id, w.id); renderSections(); refresh(); });
-  head.appendChild(del);
+  var tools = el('div', 'row-tools');
+  tools.appendChild(toolBtn('▲', 'Subir', function () { moveItem(section.widgets, wIdx, -1); renderSections(); refresh(); }, 'move'));
+  tools.appendChild(toolBtn('▼', 'Bajar', function () { moveItem(section.widgets, wIdx, 1); renderSections(); refresh(); }, 'move'));
+  tools.appendChild(toolBtn('✕', 'Quitar', function () { removeWidget(section.id, w.id); renderSections(); refresh(); }));
+  head.appendChild(tools);
   block.appendChild(head);
 
   if (w.type === 'text') {
     var ta = el('textarea'); ta.rows = 3; ta.value = w.text;
-    ta.placeholder = 'Texto. Admite HTML: <b>, <i>, <a href="">...';
+    ta.placeholder = 'Texto. Admite HTML: <b>negrita</b>, <i>cursiva</i>, <a href="">enlace</a>';
     ta.addEventListener('input', function (e) { w.text = e.target.value; refresh(); });
     block.appendChild(ta);
   }
 
   if (w.type === 'image') {
-    block.appendChild(labeledInput('URL de la imagen', w.imageUrl, 'https://...', function (v) { w.imageUrl = v; }, 'img-url-' + w.id));
+    block.appendChild(labeledInput('URL de la imagen', w.imageUrl, 'https://...', function (v) { w.imageUrl = normalizeDriveUrl(v); }, 'img-url-' + w.id));
     var upRow = el('div', 'upload-row');
-    var upBtn = el('button', 'btn ghost small', '⬆ Subir imagen');
+    var upBtn = el('button', 'btn ghost small', '⬆ Subir imagen'); upBtn.type = 'button';
     var fileInp = el('input'); fileInp.type = 'file'; fileInp.accept = 'image/*'; fileInp.style.display = 'none';
     var status = el('span', 'upload-status');
     upBtn.addEventListener('click', function () { fileInp.click(); });
@@ -208,8 +314,7 @@ function renderWidget(section, w) {
       var f = e.target.files[0]; if (!f) return;
       handleUpload(f, status, function (url) {
         w.imageUrl = url;
-        var box = document.getElementById('img-url-' + w.id);
-        if (box) box.value = url;
+        var box = document.getElementById('img-url-' + w.id); if (box) box.value = url;
         refresh();
       });
     });
@@ -224,31 +329,130 @@ function renderWidget(section, w) {
     function renderButtons() {
       list.innerHTML = '';
       w.buttons.forEach(function (b, bi) {
-        var row = el('div', 'btn-row-item');
-        var t = el('input'); t.type = 'text'; t.placeholder = 'Texto'; t.value = b.text;
-        t.addEventListener('input', function (e) { b.text = e.target.value; refresh(); });
-        var u = el('input'); u.type = 'text'; u.placeholder = 'https://enlace'; u.value = b.url;
-        u.addEventListener('input', function (e) { b.url = e.target.value; refresh(); });
-        var c = el('input'); c.type = 'color'; c.className = 'color-input';
-        c.value = b.color || '#1a73e8'; c.title = 'Color del botón';
+        var row = el('div', 'widget-block'); row.style.margin = '0 0 8px'; row.style.background = '#fafbfc';
+        var rh = el('div', 'widget-head');
+        rh.appendChild(el('span', 'widget-type', 'Botón ' + (bi + 1)));
+        var rt = el('div', 'row-tools');
+        rt.appendChild(toolBtn('▲', 'Subir', function () { moveItem(w.buttons, bi, -1); renderButtons(); refresh(); }, 'move'));
+        rt.appendChild(toolBtn('▼', 'Bajar', function () { moveItem(w.buttons, bi, 1); renderButtons(); refresh(); }, 'move'));
+        rt.appendChild(toolBtn('✕', 'Quitar', function () { w.buttons.splice(bi, 1); if (!w.buttons.length) w.buttons.push({ text:'',url:'',btype:'FILLED',color:'',icon:'' }); renderButtons(); refresh(); }));
+        rh.appendChild(rt); row.appendChild(rh);
+        row.appendChild(labeledInput('Texto del botón', b.text, 'Ej. Ver oferta', function (v) { b.text = v; }));
+        row.appendChild(labeledInput('Enlace (URL)', b.url, 'https://...', function (v) { b.url = v; }));
+        var g = el('div', 'grid-3');
+        // estilo
+        var fType = el('label', 'field'); fType.appendChild(el('span', null, 'Estilo'));
+        var selType = el('select');
+        Object.keys(BUTTON_TYPES).forEach(function (k) {
+          var o = el('option'); o.value = k; o.textContent = BUTTON_TYPES[k]; if (k === b.btype) o.selected = true; selType.appendChild(o);
+        });
+        selType.addEventListener('change', function (e) { b.btype = e.target.value; refresh(); });
+        fType.appendChild(selType); g.appendChild(fType);
+        // color
+        var fCol = el('label', 'field'); fCol.appendChild(el('span', null, 'Color'));
+        var c = el('input'); c.type = 'color'; c.className = 'color-input'; c.value = b.color || '#1a73e8';
         c.addEventListener('input', function (e) { b.color = e.target.value; refresh(); });
-        var rm = el('button', 'icon-btn', '✕');
-        rm.addEventListener('click', function () { w.buttons.splice(bi, 1); if (!w.buttons.length) w.buttons.push({text:'',url:'',color:''}); renderButtons(); refresh(); });
-        row.appendChild(t); row.appendChild(u); row.appendChild(c); row.appendChild(rm);
+        fCol.appendChild(c); g.appendChild(fCol);
+        // icono
+        g.appendChild(iconSelect(b.icon, function (v) { b.icon = v; }));
+        row.appendChild(g);
         list.appendChild(row);
       });
     }
     renderButtons();
     block.appendChild(list);
-    var addBtn = el('button', 'btn ghost small', '+ Agregar botón');
-    addBtn.addEventListener('click', function () { w.buttons.push({ text: '', url: '', color: '' }); renderButtons(); refresh(); });
+    var addBtn = el('button', 'btn ghost small', '+ Agregar botón'); addBtn.type = 'button';
+    addBtn.addEventListener('click', function () { w.buttons.push({ text: '', url: '', btype: 'FILLED', color: '', icon: '' }); renderButtons(); refresh(); });
     block.appendChild(addBtn);
   }
 
   if (w.type === 'decoratedText') {
+    block.appendChild(iconSelect(w.startIcon, function (v) { w.startIcon = v; }));
     block.appendChild(labeledInput('Etiqueta superior', w.topLabel, 'Ej. Precio', function (v) { w.topLabel = v; }));
     block.appendChild(labeledInput('Texto principal', w.text, 'Ej. $499', function (v) { w.text = v; }));
     block.appendChild(labeledInput('Etiqueta inferior', w.bottomLabel, 'Ej. IVA incluido', function (v) { w.bottomLabel = v; }));
+    var g2 = el('div', 'grid-2');
+    g2.appendChild(labeledInput('Botón lateral: texto (opcional)', w.btnText, 'Ej. Comprar', function (v) { w.btnText = v; }));
+    g2.appendChild(labeledInput('Botón lateral: enlace', w.btnUrl, 'https://...', function (v) { w.btnUrl = v; }));
+    block.appendChild(g2);
+  }
+
+  if (w.type === 'chips') {
+    var clist = el('div');
+    function renderChips() {
+      clist.innerHTML = '';
+      w.chips.forEach(function (ch, ci) {
+        var row = el('div', 'widget-block'); row.style.margin = '0 0 8px'; row.style.background = '#fafbfc';
+        var rh = el('div', 'widget-head');
+        rh.appendChild(el('span', 'widget-type', 'Chip ' + (ci + 1)));
+        var rt = el('div', 'row-tools');
+        rt.appendChild(toolBtn('▲', 'Subir', function () { moveItem(w.chips, ci, -1); renderChips(); refresh(); }, 'move'));
+        rt.appendChild(toolBtn('▼', 'Bajar', function () { moveItem(w.chips, ci, 1); renderChips(); refresh(); }, 'move'));
+        rt.appendChild(toolBtn('✕', 'Quitar', function () { w.chips.splice(ci, 1); if (!w.chips.length) w.chips.push({ label:'',url:'',icon:'' }); renderChips(); refresh(); }));
+        rh.appendChild(rt); row.appendChild(rh);
+        row.appendChild(labeledInput('Etiqueta', ch.label, 'Ej. Más info', function (v) { ch.label = v; }));
+        row.appendChild(labeledInput('Enlace (URL)', ch.url, 'https://...', function (v) { ch.url = v; }));
+        row.appendChild(iconSelect(ch.icon, function (v) { ch.icon = v; }));
+        clist.appendChild(row);
+      });
+    }
+    renderChips();
+    block.appendChild(clist);
+    var addChip = el('button', 'btn ghost small', '+ Agregar chip'); addChip.type = 'button';
+    addChip.addEventListener('click', function () { w.chips.push({ label: '', url: '', icon: '' }); renderChips(); refresh(); });
+    block.appendChild(addChip);
+  }
+
+  if (w.type === 'grid') {
+    block.appendChild(labeledInput('Título de la cuadrícula (opcional)', w.title, 'Ej. Productos', function (v) { w.title = v; }));
+    var gg = el('div', 'grid-2');
+    var fc = el('label', 'field'); fc.appendChild(el('span', null, 'Columnas'));
+    var selC = el('select');
+    [1,2,3].forEach(function (n) { var o = el('option'); o.value = n; o.textContent = n; if (n === w.columnCount) o.selected = true; selC.appendChild(o); });
+    selC.addEventListener('change', function (e) { w.columnCount = parseInt(e.target.value, 10); refresh(); });
+    fc.appendChild(selC); gg.appendChild(fc);
+    gg.appendChild(labeledInput('Al hacer clic, abrir enlace (opcional)', w.onClickUrl, 'https://...', function (v) { w.onClickUrl = v; }));
+    block.appendChild(gg);
+
+    var ilist = el('div');
+    function renderItems() {
+      ilist.innerHTML = '';
+      w.items.forEach(function (it, ii) {
+        var row = el('div', 'widget-block'); row.style.margin = '0 0 8px'; row.style.background = '#fafbfc';
+        var rh = el('div', 'widget-head');
+        rh.appendChild(el('span', 'widget-type', 'Elemento ' + (ii + 1)));
+        var rt = el('div', 'row-tools');
+        rt.appendChild(toolBtn('▲', 'Subir', function () { moveItem(w.items, ii, -1); renderItems(); refresh(); }, 'move'));
+        rt.appendChild(toolBtn('▼', 'Bajar', function () { moveItem(w.items, ii, 1); renderItems(); refresh(); }, 'move'));
+        rt.appendChild(toolBtn('✕', 'Quitar', function () { w.items.splice(ii, 1); if (!w.items.length) w.items.push({ title:'',subtitle:'',imageUrl:'' }); renderItems(); refresh(); }));
+        rh.appendChild(rt); row.appendChild(rh);
+        row.appendChild(labeledInput('Título', it.title, 'Ej. Camisa', function (v) { it.title = v; }));
+        row.appendChild(labeledInput('Subtítulo', it.subtitle, 'Ej. $299', function (v) { it.subtitle = v; }));
+        var iu = labeledInput('URL de imagen', it.imageUrl, 'https://...', function (v) { it.imageUrl = normalizeDriveUrl(v); }, 'grid-img-' + w.id + '-' + ii);
+        row.appendChild(iu);
+        var upRow = el('div', 'upload-row');
+        var upBtn = el('button', 'btn ghost small', '⬆ Subir imagen'); upBtn.type = 'button';
+        var fileInp = el('input'); fileInp.type = 'file'; fileInp.accept = 'image/*'; fileInp.style.display = 'none';
+        var status = el('span', 'upload-status');
+        upBtn.addEventListener('click', function () { fileInp.click(); });
+        fileInp.addEventListener('change', function (e) {
+          var f = e.target.files[0]; if (!f) return;
+          handleUpload(f, status, function (url) {
+            it.imageUrl = url;
+            var box = document.getElementById('grid-img-' + w.id + '-' + ii); if (box) box.value = url;
+            refresh();
+          });
+        });
+        upRow.appendChild(upBtn); upRow.appendChild(fileInp); upRow.appendChild(status);
+        row.appendChild(upRow);
+        ilist.appendChild(row);
+      });
+    }
+    renderItems();
+    block.appendChild(ilist);
+    var addItem = el('button', 'btn ghost small', '+ Agregar elemento'); addItem.type = 'button';
+    addItem.addEventListener('click', function () { w.items.push({ title: '', subtitle: '', imageUrl: '' }); renderItems(); refresh(); });
+    block.appendChild(addItem);
   }
 
   if (w.type === 'divider') {
@@ -258,38 +462,23 @@ function renderWidget(section, w) {
   return block;
 }
 
-function labeledInput(label, value, placeholder, onInput, id) {
-  var f = el('label', 'field');
-  f.innerHTML = '<span>' + label + '</span>';
-  var i = el('input'); i.type = 'text'; i.value = value || ''; i.placeholder = placeholder || '';
-  if (id) i.id = id;
-  i.addEventListener('input', function (e) { onInput(e.target.value); refresh(); });
-  f.appendChild(i);
-  return f;
-}
-
 /* ===========================================================================
- *  Subida de imagenes (cliente -> servidor)
+ *  Subida de imagenes
  * ======================================================================== */
 function handleUpload(file, statusEl, onDone) {
   if (file.size > 25 * 1024 * 1024) {
-    statusEl.textContent = 'La imagen supera 25 MB.';
-    statusEl.className = 'upload-status err';
-    return;
+    statusEl.textContent = 'La imagen supera 25 MB.'; statusEl.className = 'upload-status err'; return;
   }
-  statusEl.textContent = 'Subiendo a Drive...';
-  statusEl.className = 'upload-status';
+  statusEl.textContent = 'Subiendo a Drive...'; statusEl.className = 'upload-status';
   var reader = new FileReader();
   reader.onload = function () {
     google.script.run
       .withSuccessHandler(function (res) {
-        statusEl.textContent = '✓ Guardada en "Mensajes ventel"';
-        statusEl.className = 'upload-status ok';
+        statusEl.textContent = '✓ Guardada en "Mensajes ventel"'; statusEl.className = 'upload-status ok';
         onDone(res.url);
       })
       .withFailureHandler(function (err) {
-        statusEl.textContent = 'Error: ' + err.message;
-        statusEl.className = 'upload-status err';
+        statusEl.textContent = 'Error: ' + err.message; statusEl.className = 'upload-status err';
       })
       .uploadImage(reader.result, file.name);
   };
@@ -303,22 +492,14 @@ function hexToColor(hex) {
   if (!hex) return null;
   var m = hex.replace('#', '');
   if (m.length !== 6) return null;
-  return {
-    red: parseInt(m.substr(0, 2), 16) / 255,
-    green: parseInt(m.substr(2, 2), 16) / 255,
-    blue: parseInt(m.substr(4, 2), 16) / 255,
-    alpha: 1
-  };
+  return { red: parseInt(m.substr(0,2),16)/255, green: parseInt(m.substr(2,2),16)/255, blue: parseInt(m.substr(4,2),16)/255, alpha: 1 };
 }
 
 function buildPayload() {
   var payload = {};
-
   if (state.text && state.text.trim()) payload.text = state.text.trim();
 
   var card = {};
-
-  // Encabezado
   if (state.useHeader) {
     var h = {};
     if (state.header.title.trim()) h.title = state.header.title.trim();
@@ -326,31 +507,30 @@ function buildPayload() {
     if (state.header.imageUrl.trim()) {
       h.imageUrl = state.header.imageUrl.trim();
       h.imageType = state.header.imageType;
+      if (state.header.imageAltText && state.header.imageAltText.trim()) h.imageAltText = state.header.imageAltText.trim();
     }
     if (Object.keys(h).length) card.header = h;
   }
 
-  // Secciones
   var sections = [];
   state.sections.forEach(function (s) {
     var widgets = [];
-    s.widgets.forEach(function (w) {
-      var widget = buildWidget(w);
-      if (widget) widgets.push(widget);
-    });
+    s.widgets.forEach(function (w) { var built = buildWidget(w); if (built) widgets.push(built); });
     if (widgets.length) {
       var sec = { widgets: widgets };
       if (s.header && s.header.trim()) sec.header = s.header.trim();
+      if (s.collapsible) {
+        sec.collapsible = true;
+        sec.uncollapsibleWidgetsCount = Math.max(0, s.uncollapsible || 0);
+      }
       sections.push(sec);
     }
   });
   if (sections.length) card.sections = sections;
 
-  // Solo agregar cardsV2 si la tarjeta tiene contenido.
   if (card.header || card.sections) {
-    payload.cardsV2 = [{ cardId: 'ventel-card', card: card }];
+    payload.cardsV2 = [{ cardId: 'liverpool-card', card: card }];
   }
-
   return payload;
 }
 
@@ -371,26 +551,58 @@ function buildWidget(w) {
     w.buttons.forEach(function (b) {
       if (!b.text || !b.text.trim() || !b.url || !b.url.trim()) return;
       var btn = { text: b.text.trim(), onClick: { openLink: { url: b.url.trim() } } };
-      var col = hexToColor(b.color);
-      if (col) btn.color = col;
+      if (b.btype) btn.type = b.btype;
+      var col = hexToColor(b.color); if (col) btn.color = col;
+      if (b.icon) btn.icon = { knownIcon: b.icon };
       buttons.push(btn);
     });
     if (!buttons.length) return null;
     return { buttonList: { buttons: buttons } };
   }
   if (w.type === 'decoratedText') {
-    var hasContent = (w.topLabel && w.topLabel.trim()) || (w.text && w.text.trim()) || (w.bottomLabel && w.bottomLabel.trim());
-    if (!hasContent) return null;
+    var has = (w.topLabel&&w.topLabel.trim())||(w.text&&w.text.trim())||(w.bottomLabel&&w.bottomLabel.trim())||w.startIcon;
+    if (!has) return null;
     var dt = {};
-    if (w.text && w.text.trim()) dt.text = w.text.trim(); else dt.text = ' ';
+    dt.text = (w.text && w.text.trim()) ? w.text.trim() : ' ';
     if (w.topLabel && w.topLabel.trim()) dt.topLabel = w.topLabel.trim();
     if (w.bottomLabel && w.bottomLabel.trim()) dt.bottomLabel = w.bottomLabel.trim();
-    dt.wrapText = true;
+    if (w.startIcon) dt.startIcon = { knownIcon: w.startIcon };
+    dt.wrapText = w.wrapText !== false;
+    if (w.btnText && w.btnText.trim() && w.btnUrl && w.btnUrl.trim()) {
+      dt.button = { text: w.btnText.trim(), onClick: { openLink: { url: w.btnUrl.trim() } } };
+    }
     return { decoratedText: dt };
   }
-  if (w.type === 'divider') {
-    return { divider: {} };
+  if (w.type === 'chips') {
+    var chips = [];
+    w.chips.forEach(function (ch) {
+      if (!ch.label || !ch.label.trim()) return;
+      var chip = { label: ch.label.trim() };
+      if (ch.url && ch.url.trim()) chip.onClick = { openLink: { url: ch.url.trim() } };
+      if (ch.icon) chip.icon = { knownIcon: ch.icon };
+      chips.push(chip);
+    });
+    if (!chips.length) return null;
+    return { chipList: { chips: chips } };
   }
+  if (w.type === 'grid') {
+    var items = [];
+    w.items.forEach(function (it) {
+      var hasItem = (it.title&&it.title.trim())||(it.subtitle&&it.subtitle.trim())||(it.imageUrl&&it.imageUrl.trim());
+      if (!hasItem) return;
+      var item = {};
+      if (it.title && it.title.trim()) item.title = it.title.trim();
+      if (it.subtitle && it.subtitle.trim()) item.subtitle = it.subtitle.trim();
+      if (it.imageUrl && it.imageUrl.trim()) item.image = { imageUri: it.imageUrl.trim() };
+      items.push(item);
+    });
+    if (!items.length) return null;
+    var grid = { columnCount: w.columnCount || 2, items: items };
+    if (w.title && w.title.trim()) grid.title = w.title.trim();
+    if (w.onClickUrl && w.onClickUrl.trim()) grid.onClick = { openLink: { url: w.onClickUrl.trim() } };
+    return { grid: grid };
+  }
+  if (w.type === 'divider') return { divider: {} };
   return null;
 }
 
@@ -400,17 +612,15 @@ function buildWidget(w) {
 function refresh() {
   var payload = buildPayload();
   renderJson(payload);
-  renderPreview();
+  renderPreview(payload);
 }
 
 function renderJson(payload) {
   var box = document.getElementById('jsonOutput');
   var status = document.getElementById('jsonStatus');
   try {
-    var str = JSON.stringify(payload, null, 2);
-    box.textContent = str;
-    var empty = !payload.text && !payload.cardsV2;
-    if (empty) {
+    box.textContent = JSON.stringify(payload, null, 2);
+    if (!payload.text && !payload.cardsV2) {
       status.textContent = 'El mensaje está vacío. Agrega texto o contenido a la tarjeta.';
       status.className = 'hint err';
     } else {
@@ -418,48 +628,40 @@ function renderJson(payload) {
       status.className = 'hint ok';
     }
   } catch (e) {
-    box.textContent = '';
-    status.textContent = 'Error generando JSON: ' + e.message;
-    status.className = 'hint err';
+    box.textContent = ''; status.textContent = 'Error generando JSON: ' + e.message; status.className = 'hint err';
   }
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-// Convierte el formato de texto de Chat (*negrita*, _cursiva_, <url|texto>) a HTML simple.
+function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function chatTextToHtml(s) {
   var out = escapeHtml(s);
   out = out.replace(/&lt;(https?:\/\/[^|&]+)\|([^&]+)&gt;/g, '<a href="$1" target="_blank">$2</a>');
   out = out.replace(/&lt;(https?:\/\/[^&]+)&gt;/g, '<a href="$1" target="_blank">$1</a>');
   out = out.replace(/\*([^*]+)\*/g, '<b>$1</b>');
   out = out.replace(/_([^_]+)_/g, '<i>$1</i>');
+  // permitir etiquetas basicas de formato escritas por el usuario
+  out = out.replace(/&lt;(\/?(?:b|i|u|s|br))&gt;/g, '<$1>');
   return out;
 }
+function colorToCss(c) { return 'rgb(' + Math.round(c.red*255) + ',' + Math.round(c.green*255) + ',' + Math.round(c.blue*255) + ')'; }
+function iconEmoji(name) { return ICON_EMOJI[name] || '•'; }
 
-function renderPreview() {
-  // Texto
-  var pt = document.getElementById('previewText');
-  pt.innerHTML = state.text ? chatTextToHtml(state.text) : '';
+function renderPreview(payload) {
+  payload = payload || buildPayload();
+  document.getElementById('previewText').innerHTML = state.text ? chatTextToHtml(state.text) : '';
 
-  // Tarjeta
   var pc = document.getElementById('previewCard');
   pc.innerHTML = '';
-
-  var payload = buildPayload();
   if (!payload.cardsV2) {
     if (!payload.text) pc.innerHTML = '<div class="gc-empty">Tu mensaje aparecerá aquí.</div>';
     return;
   }
   var card = payload.cardsV2[0].card;
 
-  // Header
   if (card.header) {
     var hdr = el('div', 'gc-header');
     if (card.header.imageUrl) {
-      var im = el('img');
-      im.src = card.header.imageUrl;
+      var im = el('img'); im.src = card.header.imageUrl;
       im.className = (card.header.imageType === 'SQUARE') ? 'square' : 'circle';
       im.onerror = function () { this.style.display = 'none'; };
       hdr.appendChild(im);
@@ -471,70 +673,124 @@ function renderPreview() {
     pc.appendChild(hdr);
   }
 
-  // Sections
   (card.sections || []).forEach(function (sec) {
     var sdiv = el('div', 'gc-section');
     if (sec.header) sdiv.appendChild(el('div', 'gc-section-header', escapeHtml(sec.header)));
-    sec.widgets.forEach(function (wg) {
-      sdiv.appendChild(renderPreviewWidget(wg));
-    });
+    sec.widgets.forEach(function (wg) { sdiv.appendChild(renderPreviewWidget(wg)); });
     pc.appendChild(sdiv);
   });
 }
 
 function renderPreviewWidget(wg) {
-  if (wg.textParagraph) {
-    return el('div', 'gc-text', chatTextToHtml(wg.textParagraph.text));
-  }
+  if (wg.textParagraph) return el('div', 'gc-text', chatTextToHtml(wg.textParagraph.text));
+
   if (wg.image) {
-    var img = el('img', 'gc-img');
-    img.src = wg.image.imageUrl;
-    img.alt = wg.image.altText || '';
-    img.onerror = function () { this.replaceWith(elText('gc-empty', 'No se pudo cargar la imagen')); };
+    var img = el('img', 'gc-img'); img.src = wg.image.imageUrl; img.alt = wg.image.altText || '';
+    img.onerror = function () { var e = el('div','gc-empty'); e.textContent = 'No se pudo cargar la imagen'; this.replaceWith(e); };
     return img;
   }
+
   if (wg.buttonList) {
     var wrap = el('div', 'gc-buttons');
     wg.buttonList.buttons.forEach(function (b) {
-      var a = el('a', 'gc-btn', escapeHtml(b.text));
+      var cls = 'gc-btn';
+      if (b.type === 'FILLED') cls += ' filled';
+      else if (b.type === 'FILLED_TONAL') cls += ' tonal';
+      else if (b.type === 'BORDERLESS') cls += ' borderless';
+      var a = el('a', cls);
       a.href = b.onClick.openLink.url; a.target = '_blank';
+      var label = (b.icon ? '<span class="bi">' + iconEmoji(b.icon.knownIcon) + '</span>' : '') + escapeHtml(b.text);
+      a.innerHTML = label;
       if (b.color) {
-        a.style.background = colorToCss(b.color);
-        a.style.color = '#fff';
-        a.style.borderColor = colorToCss(b.color);
+        var css = colorToCss(b.color);
+        if (b.type === 'OUTLINED' || b.type === 'BORDERLESS') { a.style.color = css; if (b.type==='OUTLINED') a.style.borderColor = css; }
+        else { a.style.background = css; a.style.borderColor = css; a.style.color = '#fff'; }
       }
       wrap.appendChild(a);
     });
     return wrap;
   }
+
   if (wg.decoratedText) {
-    var d = el('div', 'gc-deco');
-    if (wg.decoratedText.topLabel) d.appendChild(el('div', 'top', escapeHtml(wg.decoratedText.topLabel)));
-    if (wg.decoratedText.text) d.appendChild(el('div', 'main', escapeHtml(wg.decoratedText.text)));
-    if (wg.decoratedText.bottomLabel) d.appendChild(el('div', 'bottom', escapeHtml(wg.decoratedText.bottomLabel)));
-    return d;
+    var d = wg.decoratedText;
+    var row = el('div', 'gc-deco-row');
+    if (d.startIcon) row.appendChild(el('div', 'gc-deco-icon', iconEmoji(d.startIcon.knownIcon)));
+    var body = el('div', 'gc-deco-body');
+    if (d.topLabel) body.appendChild(el('div', 'top', escapeHtml(d.topLabel)));
+    if (d.text && d.text.trim()) body.appendChild(el('div', 'main', chatTextToHtml(d.text)));
+    if (d.bottomLabel) body.appendChild(el('div', 'bottom', escapeHtml(d.bottomLabel)));
+    row.appendChild(body);
+    if (d.button) {
+      var ba = el('a', 'gc-btn gc-deco-btn', escapeHtml(d.button.text));
+      ba.href = d.button.onClick.openLink.url; ba.target = '_blank';
+      row.appendChild(ba);
+    }
+    return row;
   }
-  if (wg.divider) {
-    return el('div', 'gc-divider');
+
+  if (wg.chipList) {
+    var cw = el('div', 'gc-chips');
+    wg.chipList.chips.forEach(function (ch) {
+      var c = ch.onClick ? el('a', 'gc-chip') : el('span', 'gc-chip');
+      if (ch.onClick) { c.href = ch.onClick.openLink.url; c.target = '_blank'; }
+      c.innerHTML = (ch.icon ? iconEmoji(ch.icon.knownIcon) + ' ' : '') + escapeHtml(ch.label);
+      cw.appendChild(c);
+    });
+    return cw;
   }
+
+  if (wg.grid) {
+    var gwrap = el('div');
+    if (wg.grid.title) gwrap.appendChild(el('div', 'gc-section-header', escapeHtml(wg.grid.title)));
+    var g = el('div', 'gc-grid');
+    g.style.gridTemplateColumns = 'repeat(' + (wg.grid.columnCount || 2) + ', 1fr)';
+    wg.grid.items.forEach(function (it) {
+      var cell = el('div', 'gc-grid-item');
+      if (it.image && it.image.imageUri) {
+        var gi = el('img'); gi.src = it.image.imageUri; gi.onerror = function(){ this.style.display='none'; };
+        cell.appendChild(gi);
+      }
+      if (it.title || it.subtitle) {
+        var cap = el('div', 'gc-grid-cap');
+        if (it.title) cap.appendChild(el('div', 't', escapeHtml(it.title)));
+        if (it.subtitle) cap.appendChild(el('div', 's', escapeHtml(it.subtitle)));
+        cell.appendChild(cap);
+      }
+      g.appendChild(cell);
+    });
+    gwrap.appendChild(g);
+    return gwrap;
+  }
+
+  if (wg.divider) return el('div', 'gc-divider');
   return el('div');
 }
 
-function elText(cls, text) { var e = el('div', cls); e.textContent = text; return e; }
-function colorToCss(c) {
-  return 'rgb(' + Math.round(c.red * 255) + ',' + Math.round(c.green * 255) + ',' + Math.round(c.blue * 255) + ')';
-}
-
 /* ===========================================================================
- *  Copiar JSON
+ *  Acciones globales
  * ======================================================================== */
 function copyJson() {
-  var text = document.getElementById('jsonOutput').textContent;
-  navigator.clipboard.writeText(text).then(function () {
-    toast('JSON copiado al portapapeles.', 'ok');
-  }, function () {
-    toast('No se pudo copiar.', 'err');
-  });
+  navigator.clipboard.writeText(document.getElementById('jsonOutput').textContent).then(
+    function () { toast('JSON copiado al portapapeles.', 'ok'); },
+    function () { toast('No se pudo copiar.', 'err'); }
+  );
+}
+
+function resetAll() {
+  if (!window.confirm('¿Vaciar todo el mensaje y empezar de nuevo?')) return;
+  state.text = '';
+  state.header = { title: '', subtitle: '', imageUrl: '', imageType: 'CIRCLE', imageAltText: '' };
+  state.sections = [];
+  addSection();
+  document.getElementById('plainText').value = '';
+  document.getElementById('hTitle').value = '';
+  document.getElementById('hSubtitle').value = '';
+  document.getElementById('hImageUrl').value = '';
+  document.getElementById('hImageAlt').value = '';
+  document.getElementById('hImageType').value = 'CIRCLE';
+  document.getElementById('hImageStatus').textContent = '';
+  renderSections(); refresh();
+  toast('Listo, mensaje en blanco.', 'ok');
 }
 
 /* ===========================================================================
@@ -543,34 +799,22 @@ function copyJson() {
 function openConfirm() {
   var url = document.getElementById('webhookUrl').value.trim();
   var payload = buildPayload();
-
   if (!url) { toast('Configura primero la URL del webhook.', 'err'); return; }
   if (!payload.text && !payload.cardsV2) { toast('El mensaje está vacío.', 'err'); return; }
-
-  // Confirmacion 1: mostrar destino en el modal.
-  var masked = url.length > 60 ? url.slice(0, 55) + '…' : url;
-  document.getElementById('modalTarget').textContent = masked;
+  document.getElementById('modalTarget').textContent = url.length > 60 ? url.slice(0, 55) + '…' : url;
   document.getElementById('confirmModal').hidden = false;
 }
-function closeConfirm() {
-  document.getElementById('confirmModal').hidden = true;
-}
+function closeConfirm() { document.getElementById('confirmModal').hidden = true; }
 function doSend() {
-  // Confirmacion 2: confirmacion final del navegador.
-  var ok = window.confirm('Última confirmación: ¿enviar el mensaje a Google Chat ahora?');
-  if (!ok) return;
-
+  if (!window.confirm('Última confirmación: ¿enviar el mensaje a Google Chat ahora?')) return;
   var btn = document.getElementById('confirmSendBtn');
   btn.disabled = true; btn.textContent = 'Enviando...';
-
   var url = document.getElementById('webhookUrl').value.trim();
   var payload = buildPayload();
-
   google.script.run
     .withSuccessHandler(function () {
       btn.disabled = false; btn.textContent = 'Sí, enviar ahora';
-      closeConfirm();
-      toast('✓ Mensaje enviado a Google Chat.', 'ok');
+      closeConfirm(); toast('✓ Mensaje enviado a Google Chat.', 'ok');
     })
     .withFailureHandler(function (err) {
       btn.disabled = false; btn.textContent = 'Sí, enviar ahora';
@@ -585,9 +829,7 @@ function doSend() {
 var toastTimer;
 function toast(msg, kind) {
   var t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast' + (kind ? ' ' + kind : '');
-  t.hidden = false;
+  t.textContent = msg; t.className = 'toast' + (kind ? ' ' + kind : ''); t.hidden = false;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(function () { t.hidden = true; }, 4000);
 }

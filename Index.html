@@ -8,12 +8,13 @@
   <body>
     <header class="topbar">
       <div class="brand">
-        <span class="logo">VT</span>
+        <span class="logo">LV</span>
         <div>
-          <h1>Promociones Ventel</h1>
+          <h1>Anuncios Liverpool</h1>
           <p>Constructor de mensajes de tarjeta para Google Chat</p>
         </div>
       </div>
+      <button class="btn ghost small" type="button" id="resetBtn" title="Vaciar y empezar de nuevo">↺ Reiniciar</button>
     </header>
 
     <main class="layout">
@@ -88,6 +89,10 @@
               <button class="btn ghost small" type="button" id="hImageUploadBtn">⬆ Subir imagen del encabezado</button>
               <span class="upload-status" id="hImageStatus"></span>
             </div>
+            <label class="field">
+              <span>Texto alternativo del encabezado (opcional)</span>
+              <input type="text" id="hImageAlt" placeholder="Descripción de la imagen">
+            </label>
           </div>
         </div>
 
@@ -96,6 +101,10 @@
           <div class="card-title">
             <span class="step">4</span>
             <h2>Contenido</h2>
+          </div>
+          <div class="help">
+            💡 Agrega <b>secciones</b> y dentro de ellas <b>elementos</b> (texto, imagen, botones, chips, cuadrícula, etc.).
+            Usa las flechas <b>▲ ▼</b> para reordenar y 🗑 para quitar. Todo lo que ves aquí funciona enviándose por webhook.
           </div>
           <div id="sections"></div>
           <button class="btn ghost" type="button" id="addSectionBtn">+ Agregar sección</button>
@@ -123,8 +132,8 @@
           <h3>Previsualización</h3>
           <div class="chat-window">
             <div class="chat-bot">
-              <div class="bot-avatar">VT</div>
-              <div class="bot-meta"><strong>Ventel</strong> <span>App · ahora</span></div>
+              <div class="bot-avatar">LV</div>
+              <div class="bot-meta"><strong>Anuncios Liverpool</strong> <span>App · ahora</span></div>
             </div>
             <div id="previewText" class="preview-text"></div>
             <div id="previewCard" class="gchat-card"></div>
